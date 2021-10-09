@@ -1,0 +1,39 @@
+body {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#heat-map {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height: auto;
+}
+
+#svg-container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 90%;
+  max-width: 1200px;
+  padding: 1rem 0;
+  padding-left: 1rem;
+}
+
+svg {
+  display: block;
+}
+
+.axis {
+  font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+  #svg-container {
+    width: 100%;
+  }
+}
