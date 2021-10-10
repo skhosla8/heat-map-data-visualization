@@ -17,13 +17,20 @@
 
     <script>
         const margin = {
-            top: 80,
-            right: 80,
-            bottom: 80,
-            left: 115,
+            top: 90,
+            right: 50,
+            bottom: 180,
+            left: 95,
         },
             width = 1000,
-            height = 600;
+            height = 650;
+
+        const tooltip = d3
+            .select('body')
+            .append('div')
+            .attr('id', 'tooltip')
+            .style('opacity', 0)
+            .style('position', 'absolute');
 
         const svg = d3
             .select('#svg-container')
@@ -52,7 +59,8 @@
                     .axisBottom(xScale)
                     .tickValues(xScale.domain().filter(year => year % 10 === 0))
                     .tickFormat(d3.format('d'))
-                    .tickSize(10);
+                    .tickSizeInner(10)
+                    .tickSizeOuter(0);
 
                 const yAxis = d3
                     .axisLeft(yScale)
@@ -63,13 +71,14 @@
                         const format = d3.timeFormat('%B');
                         return format(date);
                     })
-                    .tickSize(10);
+                    .tickSize(0)
+                    .tickPadding(7);
 
                 svg
                     .append('text')
                     .attr('id', 'title')
                     .attr('x', width / 2)
-                    .attr('y', 20)
+                    .attr('y', 28)
                     .attr('text-anchor', 'middle')
                     .style('font-size', '1.75rem')
                     .style('font-weight', 600)
@@ -79,17 +88,17 @@
                     .append('text')
                     .attr('id', 'description')
                     .attr('x', width / 2)
-                    .attr('y', 50)
+                    .attr('y', 57)
                     .attr('text-anchor', 'middle')
-                    .style('font-size', '1.1rem')
+                    .style('font-size', '1.3rem')
                     .style('font-weight', 600)
-                    .text('1753 - 2015 \u00A0 | \u00A0 base temperature: 8.66 \u2103');
+                    .text('1753 - 2015 \u00A0 | \u00A0 Base Temperature: 8.66\u2103');
 
                 svg
                     .append('text')
                     .attr('transform', 'rotate(-90)')
-                    .attr('x', 0 - (height - 325))
-                    .attr('y', 10)
+                    .attr('x', 0 - (height - 375))
+                    .attr('y', 17)
                     .attr('text-anchor', 'end')
                     .style('font-size', '1rem')
                     .style('font-weight', 600)
@@ -98,7 +107,7 @@
                 svg
                     .append('text')
                     .attr('x', width / 2)
-                    .attr('y', height)
+                    .attr('y', `${height - (margin.bottom / 1.8)}`)
                     .attr('text-anchor', 'middle')
                     .style('font-size', '1rem')
                     .style('font-weight', 600)
@@ -123,12 +132,66 @@
                     .attr('class', 'axis')
                     .attr('transform', `translate(${margin.left}, 0)`);
 
-                const minTemp = data.baseTemperature + data.monthlyVariance.map(item => item.variance)
+                const minTemp = data.baseTemperature + Math.min.apply(null, data.monthlyVariance.map(item => item.variance));
+
+                const maxTemp = data.baseTemperature + Math.max.apply(null, data.monthlyVariance.map(item => item.variance));
+
+                const legendWidth = 500;
+
+                const legendHeight = 27;
 
                 const legendThreshold = d3
                     .scaleThreshold()
-                    .domain([0, 2.8, 3.9, 5.0, 6.1, 7.2, 8.3, 9.5, 10.6, 11.7, 12.8])
-                    .range(['#439FB5', '#60ADBE', '#E5F1F3', '#93C2B6', '#95BD8D', '#C6CD6F', '#E8D255', '#EF6A26', '#F22000']);
+                    .domain([2.8, 3.9, 5.0, 6.1, 7.2, 8.3, 9.5, 10.6, 11.7, 12.8])
+                    .range([
+                        '#a50026', '#d73027', '#f46d43', '#fdae61', '#fee090', '#ffffbf', '#e0f3f8', '#abd9e9', '#74add1', '#4575b4', '#313695'
+                    ].reverse());
+
+                const legendXScale = d3
+                    .scaleLinear()
+                    .domain([minTemp, maxTemp])
+                    .range([margin.left, legendWidth]);
+
+                const legendXAxis = d3
+                    .axisBottom(legendXScale)
+                    .tickSize(10)
+                    .tickValues(legendThreshold.domain())
+                    .tickFormat(d3.format('.1f'));
+
+                const legend = svg
+                    .append('g')
+                    .attr('id', 'legend')
+                    .attr('transform', `translate(0, ${height - (margin.bottom / 3)})`);
+
+                legend
+                    .append('g')
+                    .call(legendXAxis)
+                    .attr('class', 'axis')
+                    .attr('transform', `translate(0, ${legendHeight})`);
+
+                legend
+                    .append('g')
+                    .selectAll('rect')
+                    .data(legendThreshold.range().map(function (color) {
+                        const d = legendThreshold.invertExtent(color);
+
+                        if (d[0] === null) {
+                            d[0] = legendXScale.domain()[0];
+                        }
+
+                        if (d[1] === null) {
+                            d[1] = legendXScale.domain()[1];
+                        }
+
+                        return d;
+                    }))
+                    .enter()
+                    .append('rect')
+                    .attr('width', (d) => legendXScale(d[1]) - legendXScale(d[0]))
+                    .attr('height', legendHeight)
+                    .attr('x', (d) => legendXScale(d[0]))
+                    .attr('y', 0)
+                    .attr('fill', (d) => legendThreshold(d[0]));
 
                 svg.selectAll('rect')
                     .data(data.monthlyVariance)
@@ -142,8 +205,25 @@
                     .attr('data-month', (d) => d.month)
                     .attr('data-year', (d) => d.year)
                     .attr('data-temp', (d) => data.baseTemperature + d.variance)
-                    .style('stroke', '#000')
-                    .style('fill', '#d3d3d3');
+                    .style('fill', (d) => legendThreshold(data.baseTemperature + d.variance))
+                    .on('mouseover', function (event, d) {
+                        const month = new Date().setMonth(d.month);
+
+                        tooltip
+                            .style('opacity', 0.8)
+                            .attr('data-year', d.year)
+                            .html(
+                                `<b>${d3.timeFormat('%B')(month)}, ${d.year}</b></br>
+                                temp: ${d3.format('0.1f')(data.baseTemperature + d.variance)}&#8451</span></br>
+                                variance: ${d3.format('+0.1f')(d.variance)}&#8451`
+                            )
+                            .style('left', event.pageX + 10 + 'px')
+                            .style('top', event.pageY + 'px');
+                    })
+                    .on('mouseout', function (event, d) {
+                        tooltip
+                            .style('opacity', 0);
+                    });
             })
             .catch((error) => console.log(error));
     </script>
