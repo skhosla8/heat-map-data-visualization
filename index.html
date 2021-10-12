@@ -23,7 +23,7 @@
             left: 95,
         },
             width = 1000,
-            height = 650;
+            height = 600;
 
         const tooltip = d3
             .select('body')
@@ -133,11 +133,9 @@
                     .attr('transform', `translate(${margin.left}, 0)`);
 
                 const minTemp = data.baseTemperature + Math.min.apply(null, data.monthlyVariance.map(item => item.variance));
-
                 const maxTemp = data.baseTemperature + Math.max.apply(null, data.monthlyVariance.map(item => item.variance));
 
                 const legendWidth = 500;
-
                 const legendHeight = 27;
 
                 const legendThreshold = d3
@@ -228,6 +226,5 @@
             .catch((error) => console.log(error));
     </script>
 </body>
-<script src="https://cdn.freecodecamp.org/testable-projects-fcc/v1/bundle.js"></script>
 
 </html>
